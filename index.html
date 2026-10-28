@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>LightBox Art Tracer - Đồ Nét Hình Vẽ</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <!-- Canvas / Board Workspace -->
+  <div id="board" class="board">
+    <div id="empty-state" class="empty-state">
+      <div class="empty-content">
+        <div class="upload-icon-box">
+          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+            <polyline points="17 8 12 3 7 8"/>
+            <line x1="12" y1="3" x2="12" y2="15"/>
+          </svg>
+        </div>
+        <h2>Chọn ảnh để bắt đầu vẽ đồ nét</h2>
+        <p>Hỗ trợ đè giấy lên màn hình để can / vẽ hình nét chuẩn xác nhất</p>
+        <label for="image-input" class="btn btn-primary upload-btn">
+          <span>Chọn tệp ảnh</span>
+          <input type="file" id="image-input" accept="image/*" hidden>
+        </label>
+        <span class="hint-text">Hoặc kéo thả ảnh trực tiếp vào đây / dán ảnh (Ctrl+V)</span>
+      </div>
+    </div>
+
+    <!-- Image Container with Drag & Transform -->
+    <div id="image-wrapper" class="image-wrapper" style="display: none;">
+      <img id="target-image" src="" alt="Tracer target" draggable="false">
+    </div>
+
+    <!-- Floating / Top Control Panel -->
+    <aside id="control-panel" class="control-panel">
+      <div class="panel-header">
+        <div class="panel-title">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="3"/>
+            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+          </svg>
+          <span>Công cụ đồ nét</span>
+        </div>
+        <button id="btn-minimize-panel" class="icon-btn" title="Thu gọn / Mở rộng" aria-label="Minimize panel">
+          <svg class="chevron-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+            <polyline points="18 15 12 9 6 15"/>
+          </svg>
+        </button>
+      </div>
+
+      <div class="panel-body" id="panel-body">
+        <!-- Change image action -->
+        <div class="control-row action-row">
+          <label for="change-image-input" class="btn btn-secondary btn-sm">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+              <polyline points="17 8 12 3 7 8"/>
+              <line x1="12" y1="3" x2="12" y2="15"/>
+            </svg>
+            Đổi ảnh
+            <input type="file" id="change-image-input" accept="image/*" hidden>
+          </label>
+          <button id="btn-reset-transform" class="btn btn-ghost btn-sm" title="Khôi phục vị trí và kích thước gốc">
+            Đặt lại vị trí
+          </button>
+        </div>
+
+        <!-- Scale slider -->
+        <div class="control-group">
+          <div class="control-label-row">
+            <label for="scale-range">Kích thước</label>
+            <span id="scale-val" class="value-tag">100%</span>
+          </div>
+          <div class="range-with-buttons">
+            <button id="btn-scale-down" class="btn-step" title="Giảm">−</button>
+            <input type="range" id="scale-range" min="10" max="500" value="100" step="5">
+            <button id="btn-scale-up" class="btn-step" title="Tăng">+</button>
+          </div>
+        </div>
+
+        <!-- Rotation & Flip controls -->
+        <div class="control-group">
+          <div class="control-label-row">
+            <label for="rotate-range">Xoay ảnh</label>
+            <span id="rotate-val" class="value-tag">0°</span>
+          </div>
+          <input type="range" id="rotate-range" min="0" max="360" value="0" step="1">
+          <div class="quick-btns">
+            <button id="btn-rot-90" class="btn-tag">90°</button>
+            <button id="btn-flip-h" class="btn-tag">Lật ngang</button>
+            <button id="btn-flip-v" class="btn-tag">Lật dọc</button>
+          </div>
+        </div>
+
+        <!-- Background Color -->
+        <div class="control-group">
+          <div class="control-label-row">
+            <label for="bg-color">Màu nền màn hình</label>
+            <span id="bg-color-val" class="value-tag">#ffffff</span>
+          </div>
+          <div class="color-picker-row">
+            <input type="color" id="bg-color" value="#ffffff">
+            <div class="color-presets">
+              <button class="color-preset-dot" data-color="#ffffff" style="background: #ffffff;" title="Trắng"></button>
+              <button class="color-preset-dot" data-color="#000000" style="background: #000000;" title="Đen"></button>
+              <button class="color-preset-dot" data-color="#fff8db" style="background: #fff8db;" title="Vàng ấm"></button>
+              <button class="color-preset-dot" data-color="#f0f4f8" style="background: #f0f4f8;" title="Xám nhạt"></button>
+              <button class="color-preset-dot" data-color="#18181b" style="background: #18181b;" title="Tối"></button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Filter / Contrast / Invert for tracing -->
+        <div class="control-group">
+          <label>Chế độ hiển thị hỗ trợ can nét</label>
+          <div class="filter-toggle-row">
+            <button id="btn-filter-invert" class="btn-tag" title="Đảo màu đen trắng để dễ nhìn đường nét">Đảo màu (Invert)</button>
+            <button id="btn-filter-grayscale" class="btn-tag" title="Đen trắng">Đen trắng</button>
+            <button id="btn-filter-outline" class="btn-tag" title="Tăng độ tương phản để rõ viền nét">Rõ nét viền</button>
+          </div>
+        </div>
+
+        <!-- Brightness & Opacity -->
+        <div class="control-group">
+          <div class="control-label-row">
+            <label for="opacity-range">Độ mờ / sáng ảnh</label>
+            <span id="opacity-val" class="value-tag">100%</span>
+          </div>
+          <input type="range" id="opacity-range" min="10" max="100" value="100" step="5">
+        </div>
+
+        <div class="panel-divider"></div>
+
+        <!-- LOCK BUTTON -->
+        <div class="control-group">
+          <button id="btn-lock" class="btn btn-lock">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+              <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+            </svg>
+            <span>KHÓA MÀN HÌNH ĐỂ VẼ</span>
+          </button>
+          <p class="lock-tip">Sau khi khóa, toàn bộ màn hình sẽ không bị chạm lệch khi bạn đặt giấy lên vẽ.</p>
+        </div>
+      </div>
+    </aside>
+  </div>
+
+  <!-- Fullscreen Touch Blocker Overlay (Active when Locked) -->
+  <div id="lock-overlay" class="lock-overlay" style="display: none;">
+    <!-- Floating Unlock Button / Trigger -->
+    <div class="unlock-floating-container">
+      <button id="btn-unlock" class="btn-unlock-pill">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+          <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+          <path d="M7 11V7a5 5 0 0 1 9.9-1"/>
+        </svg>
+        <span>Mở khóa thao tác</span>
+      </button>
+      <div class="unlock-guidance">Mẹo: Nhấn đúp vào nút này hoặc bấm phím <strong>ESC</strong> để mở khóa</div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
